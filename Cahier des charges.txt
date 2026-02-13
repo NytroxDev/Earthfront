@@ -25,5 +25,3 @@ fer: fabriquer les bâtiments et les bateaux
 cuivre: fabriquer les bâtiments et les bateaux
 or: argent du jeu pour échanger par bateaux et payer les claims
 pétrole: faire fonctionner les bateaux a pétrole
-
-test
