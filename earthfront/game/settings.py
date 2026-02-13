@@ -1,8 +1,8 @@
 import pygame
 import pygame_gui
 from pygame_gui.elements import UIWindow, UIButton, UIHorizontalSlider, UILabel, UIDropDownMenu
-from earthfront.utils.data_handler import DataManager
-from earthfront.utils.logger import Logger
+from utils.data_handler import DataManager
+from utils.logger import Logger
 logger = Logger()
 
 class SettingsPanel:

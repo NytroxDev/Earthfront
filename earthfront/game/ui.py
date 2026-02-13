@@ -1,6 +1,6 @@
 import pygame
 import pygame_gui
-from earthfront.utils.logger import Logger
+from utils.logger import Logger
 logger = Logger()
 
 class RoundedButton:

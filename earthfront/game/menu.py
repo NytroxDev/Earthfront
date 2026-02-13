@@ -1,6 +1,6 @@
 import pygame
 import pygame_gui
-from earthfront.game.settings import SettingsPanel
+from game.settings import SettingsPanel
 
 
 class MainMenu:

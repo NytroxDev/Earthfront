@@ -3,9 +3,9 @@ import os.path
 from pathlib import Path
 from typing import  Optional
 import dataclasses
-from earthfront.utils.color_converter import rgb_to_hex, hex_to_rgb
-from earthfront.path import PATH
-from earthfront.utils.logger import Logger
+from utils.color_converter import rgb_to_hex, hex_to_rgb
+from path import PATH
+from utils.logger import Logger
 logger = Logger()
 
 @dataclasses.dataclass

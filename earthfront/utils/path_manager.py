@@ -1,6 +1,6 @@
 import os
-from earthfront.utils.logger import Logger
-from earthfront.path import PATH
+from utils.logger import Logger
+from path import PATH
 logger = Logger()
 
 class Images:

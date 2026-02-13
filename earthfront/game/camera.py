@@ -1,4 +1,4 @@
-from earthfront.utils.logger import Logger
+from utils.logger import Logger
 logger = Logger()
 
 class Camera:

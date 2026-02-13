@@ -1,11 +1,11 @@
 import pygame
 import pygame_gui
-from earthfront.utils.path_manager import Images, check_path
-from earthfront.game.camera import Camera
-from earthfront.game.ui import GameUI
-from earthfront.game.menu import MainMenu
-from earthfront.utils.data_handler import DataManager
-from earthfront.utils.logger import Logger
+from utils.path_manager import Images, check_path
+from .camera import Camera
+from .ui import GameUI
+from .menu import MainMenu
+from utils.data_handler import DataManager
+from utils.logger import Logger
 
 logger = Logger()
 
@@ -304,7 +304,7 @@ class Game:
         camera_pos = (self.camera.x, self.camera.y)
 
         # Vérifier si on peut skip le rendu de la carte
-        # Note: on ne peut pas skip si show_resource_grid a changé ou si la grille est affichée
+        # Note: on ne peut pas skip si show_resource_grid a changé ou si la grille est affichée,
         # car la grille dépend de la position de la caméra
         if (not self.need_redraw and
                 self.last_camera_pos == camera_pos and
@@ -421,3 +421,4 @@ class Game:
 
         logger.info("Quitting game...")
         pygame.quit()
+        return None

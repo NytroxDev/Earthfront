@@ -1,6 +1,6 @@
-from earthfront.game.game import Game
-from earthfront.utils.logger import Logger
-from earthfront.path import PATH
+from game.game import Game
+from utils.logger import Logger
+from path import PATH
 import os
 
 path_log_file = os.path.join(PATH, "data/logs/latest.log")
