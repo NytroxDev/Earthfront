@@ -1,0 +1,27 @@
+CHUNKS :
+-taille : 10x10 (150 chunks par 90 soit 13500 chunks)
+-un batiment par chunk
+-une ressource par chunk (visible sur un filtre et dans les infos du chunk)
+-une quantité d'arbres (visible sur la carte en vert et en blanc et sous forme de %)
+-une quantité d'eau (visible sur la carte en bleu et sous forme de %)
+-peut etre claim (prix exponentiel en or)
+
+RESSOURCES :
+
+bois:
+tout le vert de la carte est du bois (le bâtiment pour le récupérer produira suivant le pourcentage de bois dans le chunk)
+
+minerais:(charbon, fer, cuivre et or)
+condition: <30% d'eau
+quantité: inépuisable
+
+pétrole:
+condition: 100% d'eau
+quantité: inépuisable
+
+utilité:
+charbon: faire fonctionner certains bâtiments et les bateaux a charbon
+fer: fabriquer les bâtiments et les bateaux
+cuivre: fabriquer les bâtiments et les bateaux
+or: argent du jeu pour échanger par bateaux et payer les claims
+pétrole: faire fonctionner les bateaux a pétrole
