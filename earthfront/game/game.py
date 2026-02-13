@@ -216,7 +216,7 @@ class Game:
 
         self.manager.update(time_delta)
 
-    def draw_resource_grid(self, surface):
+    def draw_grid(self, surface):
         """Dessine une grille de carrés 10x10px sur toute la carte avec des bordures de 2px"""
         if not self.show_resource_grid:
             return
@@ -386,7 +386,7 @@ class Game:
 
         # Dessiner la grille de ressources si activée
         if self.show_resource_grid:
-            self.draw_resource_grid(self.map_surface)
+            self.draw_grid(self.map_surface)
 
         # Blitter la surface de la carte sur l'écran
         self.screen.blit(self.map_surface, (self.PANEL_WIDTH, 0))
