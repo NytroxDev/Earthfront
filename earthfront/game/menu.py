@@ -8,6 +8,9 @@ class MainMenu:
 
     def __init__(self, screen, manager, config):
 
+        self.options_button = None
+        self.quit_button = None
+        self.play_button = None
         self.config = config
 
         self.restart = False

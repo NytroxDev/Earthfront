@@ -149,7 +149,7 @@ class GridManager:
         y = int(world_y // self.cell_size)
         
         if 0 <= x < self.num_cols and 0 <= y < self.num_rows:
-            return (x, y)
+            return x, y
         return None
     
     def toggle_visibility(self):
