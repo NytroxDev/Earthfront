@@ -189,7 +189,10 @@ class Renderer:
         self.fps_update_counter += 1
         if self.fps_update_counter >= 15:
             self.fps_update_counter = 0
-            fps = int(self.game.clock.get_fps())
+            try:
+                fps = int(self.game.clock.get_fps())
+            except OverflowError:
+                fps = 9999999999
             if fps != self.last_fps:
                 self.last_fps = fps
                 self.fps_text_surface = self.font.render(f"FPS: {fps}", True, (255, 255, 0))

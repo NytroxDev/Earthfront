@@ -3,6 +3,17 @@ import pygame_gui
 from utils.logger import Logger
 logger = Logger()
 
+# Définition des ressources avec leur couleur et label
+RESOURCES = [
+    ("gold",   "Or",      (255, 215,   0)),
+    ("iron",   "Fer",     (180, 180, 190)),
+    ("copper", "Cuivre",  (200, 100,  40)),
+    ("coal",   "Charbon", ( 60,  60,  70)),
+    ("oil",    "Pétrole", (120,  80,  30)),
+    ("wood",   "Bois",    ( 50, 160,  50)),
+    ("water",  "Eau",     ( 30, 144, 255)),
+]
+
 class RoundedButton:
     """Bouton personnalisé avec coins arrondis"""
 
@@ -87,6 +98,21 @@ class GameUI:
             margins={'left': 0, 'right': 0, 'top': 0, 'bottom': 0}
         )
 
+        # ===== Zone d'affichage des infos chunk =====
+        self.chunk_info_label = pygame_gui.elements.UITextBox(
+            html_text="<b>Chunk Info</b><br>Cliquez sur une case",
+            relative_rect=pygame.Rect(10, 10, panel_width - 20, 300),
+            manager=manager,
+            container=self.panel
+        )
+
+        # ===== Boutons filtres ressources =====
+        self.active_filter = None
+        self.filter_buttons = {}
+        self._filter_just_clicked = None
+        self._create_filter_buttons(panel_width, manager)
+        # =======================================
+
         # Bouton ressources en bas à droite
         button_size = 64
         margin = 20
@@ -118,6 +144,107 @@ class GameUI:
         self.show_overlay = False
         self.quit_requested = False
 
+    def _create_filter_buttons(self, panel_width, manager):
+        """Crée les boutons filtres pour chaque ressource dans le panel"""
+        margin = 10
+        btn_h = 30
+        start_y = 350  # sous le chunk_info_label
+        label_y = start_y - 22
+
+        # Titre section
+        self.filter_label = pygame_gui.elements.UILabel(
+            relative_rect=pygame.Rect(margin, label_y, panel_width - 20, 20),
+            text="— Filtres ressources —",
+            manager=manager,
+            container=self.panel
+        )
+
+        for i, (key, label, color) in enumerate(RESOURCES):
+            y = start_y + i * (btn_h + 6)
+            btn = pygame_gui.elements.UIButton(
+                relative_rect=pygame.Rect(margin, y, panel_width - 20, btn_h),
+                text=label,
+                manager=manager,
+                container=self.panel,
+                object_id=f"#filter_{key}"
+            )
+            # Teinter légèrement le bouton avec la couleur de la ressource
+            btn.colours["normal_bg"]   = pygame.Color(*color, 140)
+            btn.colours["hovered_bg"]  = pygame.Color(min(color[0]+40,255), min(color[1]+40,255), min(color[2]+40,255))
+            btn.colours["selected_bg"] = pygame.Color(255, 255, 255)   # blanc quand actif
+            btn.colours["normal_text"]   = pygame.Color(0, 0, 0)       # texte noir
+            btn.colours["hovered_text"]  = pygame.Color(0, 0, 0)
+            btn.colours["selected_text"] = pygame.Color(*color)         # texte couleur ressource quand actif
+            btn.rebuild()
+            self.filter_buttons[key] = btn
+
+    def _apply_btn_style(self, key, active):
+        """Applique le style visuel d'un bouton filtre selon son état actif/inactif"""
+        btn = self.filter_buttons[key]
+        color = next(c for k, _, c in RESOURCES if k == key)
+        if active:
+            btn.colours["normal_bg"]     = pygame.Color(150, 150, 150)
+            btn.colours["hovered_bg"]    = pygame.Color(200, 200, 200)
+            btn.colours["selected_bg"]   = pygame.Color(150, 150, 150)
+            btn.colours["normal_text"]   = pygame.Color(*color)
+            btn.colours["hovered_text"]  = pygame.Color(*color)
+            btn.colours["selected_text"] = pygame.Color(*color)
+        else:
+            btn.colours["normal_bg"]     = pygame.Color(*color, 140)
+            btn.colours["hovered_bg"]    = pygame.Color(min(color[0]+40,255), min(color[1]+40,255), min(color[2]+40,255))
+            btn.colours["selected_bg"]   = pygame.Color(*color, 140)
+            btn.colours["normal_text"]   = pygame.Color(0, 0, 0)
+            btn.colours["hovered_text"]  = pygame.Color(0, 0, 0)
+            btn.colours["selected_text"] = pygame.Color(0, 0, 0)
+        btn.rebuild()
+
+    def check_filter_event(self, event):
+        """
+        Vérifie si un event correspond à un clic sur un bouton filtre.
+        Retourne la clé de la ressource active, ou None si désactivé.
+        """
+        if event.type != pygame_gui.UI_BUTTON_PRESSED:
+            return None
+        for key, btn in self.filter_buttons.items():
+            if event.ui_element == btn:
+                if self.active_filter == key:
+                    # Désactiver
+                    self.active_filter = None
+                    self._apply_btn_style(key, active=False)
+                else:
+                    # Désactiver l'ancien
+                    if self.active_filter:
+                        self._apply_btn_style(self.active_filter, active=False)
+                    # Activer le nouveau
+                    self.active_filter = key
+                    self._apply_btn_style(key, active=True)
+                return self.active_filter
+        return None
+
+    def update_chunk_info(self, chunk_data):
+        """Met à jour l'affichage des infos du chunk"""
+        if chunk_data is None:
+            html = "<b>Chunk Info</b><br>Cliquez sur une case"
+        else:
+            html = f"""
+            <b>Chunk ({chunk_data.position[0]}, {chunk_data.position[1]})</b><br>
+            <font color='#FFD700'>Or: {chunk_data.gold}</font>
+            <font color='#C0C0C0'>Fer: {chunk_data.iron}</font>
+            <font color='#FF8C00'>Cuivre: {chunk_data.copper}</font>
+            <font color='#000000'>Charbon: {chunk_data.coal}</font>
+            <font color='#8B4513'>Pétrole: {chunk_data.oil}</font>
+            <font color='#228B22'>Bois: {chunk_data.wood}</font>
+            <font color='#1E90FF'>Eau: {chunk_data.water}</font>
+            """
+
+        self.chunk_info_label.html_text = html
+        self.chunk_info_label.rebuild()
+
+    def toggle_grid_button(self):
+        """Basculer l'état actif du bouton grille"""
+        self.button_overlay.active = not self.button_overlay.active
+        self.show_overlay = self.button_overlay.active
+
     def update(self, mouse_pos, mouse_pressed):
         """Mettre à jour le bouton personnalisé"""
         overlay_changed = False
@@ -147,6 +274,10 @@ class GameUI:
         # Redimensionner le panel
         self.panel.set_dimensions((self.panel_width, new_height))
         self.panel.rebuild()
+
+        # Reconstruire les boutons filtres (ils sont dans le panel)
+        for btn in self.filter_buttons.values():
+            btn.rebuild()
 
         # Repositionner les boutons
         button_size = 64

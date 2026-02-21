@@ -10,9 +10,11 @@ from .menu import MainMenu
 from .grid_manager import GridManager
 from .event_handler import EventHandler
 from .renderer import Renderer
-from .database_handler import DatabaseHandler
+from utils.database_handler import DatabaseHandler
 from utils.data_handler import DataManager
 from utils.logger import Logger
+from .loading_screen import LoadingScreen
+import threading
 
 logger = Logger()
 
@@ -117,7 +119,7 @@ class Game:
                 self.PANEL_WIDTH,
                 (self.WINDOW_WIDTH, self.WINDOW_HEIGHT),
                 self.manager,
-                icon_path=Images.ICON_RESOURCES,
+                icon_path=Images.ICON_VIEW_GRID,
                 quit_icon_path=Images.ICON_QUIT
             )
         except:
@@ -162,7 +164,89 @@ class Game:
         # Moteur de rendu
         self.renderer = Renderer(self)
 
+        # Database handler
         self.data_handler = DatabaseHandler(self)
+
+        # Générer le monde si la BDD est vide
+        info = self.data_handler.get_world_info()
+        if info['chunk_count'] != 2050:
+            logger.info("Monde non généré — lancement de la génération avec écran de chargement")
+            self._run_world_generation()
+        else:
+            logger.info(f"Monde déjà généré ({info['chunk_count']} chunks), skip")
+
+
+    def _run_world_generation(self):
+        """Lance la génération du monde dans un thread et affiche le loading screen."""
+        width_chunks  = self.map_width  // 10
+        height_chunks = self.map_height // 10
+        total         = width_chunks * height_chunks
+
+        logger.info(f"Taille de la carte : {width_chunks}x{height_chunks} chunks ({total} total)")
+
+        # État partagé entre les threads (protégé par un verrou)
+        state = {"progress": 0.0, "status": "Initialisation...", "done": False, "error": None}
+        lock  = threading.Lock()
+
+        # Callback appelé par generate_world() à chaque chunk inséré
+        def on_chunk_generated(count):
+            with lock:
+                state["progress"] = count / total
+                state["status"]   = f"Génération des chunks... ({count}/{total})"
+
+        def generate():
+            logger.info("Thread de génération démarré")
+            try:
+                self.data_handler.generate_world(
+                    seed=55,
+                    width=width_chunks,
+                    height=height_chunks,
+                    on_progress=on_chunk_generated,   # ← callback
+                )
+                logger.info("Thread de génération terminé avec succès")
+                with lock:
+                    state["progress"] = 1.0
+                    state["status"]   = "Terminé !"
+                    state["done"]     = True
+            except Exception as e:
+                logger.error(f"Erreur dans le thread de génération : {e}")
+                with lock:
+                    state["error"] = str(e)
+                    state["done"]  = True
+
+        threading.Thread(target=generate, daemon=True).start()
+        logger.info("Thread de génération lancé, démarrage du loading screen")
+
+        loader = LoadingScreen(self.screen)
+        loader.start()
+        clock  = pygame.time.Clock()
+
+        while True:
+            dt = clock.tick(60) / 1000.0
+
+            with lock:
+                loader.update(state["progress"], state["status"])
+                done  = state["done"]
+                error = state["error"]
+
+            loader.draw(dt)
+
+            # Pomper les events pour éviter que la fenêtre freeze
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    logger.info("Fermeture demandée pendant le chargement")
+                    pygame.quit()
+                    import sys; sys.exit()
+
+            if done:
+                break
+
+        loader.finish()
+
+        if error:
+            logger.error(f"La génération a échoué : {error}")
+        else:
+            logger.info("Loading screen terminé, lancement du jeu")
 
     def _init_variables(self):
         """Initialise les variables du jeu"""
@@ -248,6 +332,52 @@ class Game:
     def get_grid_stats(self):
         """Retourne les statistiques de la grille"""
         return self.grid_manager.get_stats()
+
+    # ===== FILTRES RESSOURCES =====
+
+    def apply_resource_filter(self, resource_key):
+        """
+        Colorie tous les chunks selon la densité de la ressource donnée.
+        resource_key: 'gold', 'iron', 'copper', 'coal', 'oil', 'wood', 'water'
+        """
+        from game.ui import RESOURCES
+
+        # Couleur associée à la ressource
+        color = next((c for k, _, c in RESOURCES if k == resource_key), (255, 255, 255))
+
+        # Récupérer tous les chunks de la BDD
+        conn = self.data_handler.conn
+        cur = conn.cursor()
+        cur.execute(f"SELECT position, {resource_key} FROM chunk")
+        rows = cur.fetchall()
+
+        if not rows:
+            return
+
+        # Valeur max pour normaliser l'opacité
+        max_val = max((row[1] for row in rows), default=1) or 1
+
+        self.grid_manager.clear_all_cells()
+
+        for position_str, value in rows:
+            if value <= 0:
+                continue
+            try:
+                x, y = map(int, position_str.split(";"))
+            except ValueError:
+                continue
+            # Opacité proportionnelle à la quantité (30 → 220)
+            alpha = int(30 + (value / max_val) * 190)
+            self.grid_manager.set_cell_color(x, y, color, alpha)
+
+        self.need_redraw = True
+        logger.info(f"Filter applied: {resource_key} ({len(rows)} chunks)")
+
+    def clear_resource_filter(self):
+        """Efface le filtre ressource actif"""
+        self.grid_manager.clear_all_cells()
+        self.need_redraw = True
+        logger.info("Resource filter cleared")
 
     # ===== BOUCLE PRINCIPALE =====
 

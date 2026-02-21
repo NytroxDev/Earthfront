@@ -3,6 +3,7 @@ Module de gestion des événements du jeu
 Gère les entrées clavier, souris, et fenêtre
 """
 import pygame
+import pygame_gui
 from utils.logger import Logger
 from .grid_manager import GridManager
 
@@ -46,7 +47,14 @@ class EventHandler:
             # Redimensionnement de la fenêtre
             elif event.type == pygame.VIDEORESIZE:
                 self._handle_resize(event)
-            
+
+            # Raccourci clavier pour la grille
+            elif event.type == pygame.KEYDOWN and event.key == pygame.K_g:
+                self.game.grid_manager.toggle_visibility()
+                self.game.ui.toggle_grid_button()  # Synchroniser l'état du bouton
+                self.game.need_redraw = True
+                logger.info(f"Grid visibility toggled: {self.game.grid_manager.visible}")
+
             # Molette de la souris (zoom)
             elif event.type == pygame.MOUSEWHEEL:
                 self._handle_mousewheel(event, mouse_pos)
@@ -64,6 +72,16 @@ class EventHandler:
             
             # Passer l'événement au gestionnaire UI
             self.game.manager.process_events(event)
+
+            # Vérifier les boutons filtres ressources
+            if event.type == pygame_gui.UI_BUTTON_PRESSED:
+                result = self.game.ui.check_filter_event(event)
+                if result is not None:
+                    # result = None → filtre désactivé, str → ressource active
+                    if self.game.ui.active_filter is None:
+                        self.game.clear_resource_filter()
+                    else:
+                        self.game.apply_resource_filter(self.game.ui.active_filter)
         
         # Mettre à jour les boutons UI
         self._update_ui_buttons(mouse_pos, mouse_buttons[0])
@@ -79,10 +97,7 @@ class EventHandler:
     def _handle_resize(self, event):
         """Gère le redimensionnement de la fenêtre"""
         self.game.WINDOW_WIDTH, self.game.WINDOW_HEIGHT = event.w, event.h
-        self.game.screen = pygame.display.set_mode(
-            (event.w, event.h),
-            pygame.RESIZABLE | pygame.HWSURFACE | pygame.DOUBLEBUF
-        )
+
         self.game.manager.set_window_resolution((event.w, event.h))
         
         # Mise à jour du viewport de la caméra
@@ -99,7 +114,7 @@ class EventHandler:
         # Invalidation du cache
         self.game.renderer.zoom_cache.clear()
         self.game.need_redraw = True
-    
+
     def _handle_mousewheel(self, event, mouse_pos):
         """Gère le zoom avec la molette"""
         # Ajuster la position de la souris relative à la zone de la carte
@@ -130,32 +145,39 @@ class EventHandler:
         """Gère le relâchement de la souris"""
         self.is_dragging = False
         self.last_mouse_pos = None
-    
+
     def _handle_grid_click(self, mouse_pos):
         """Gère le clic sur une cellule de la grille"""
         # Convertir la position souris en position monde
         map_mouse_x = mouse_pos[0] - self.game.PANEL_WIDTH
         map_mouse_y = mouse_pos[1]
-        
+
         if map_mouse_x < 0 or map_mouse_y < 0:
             return
-        
+
         world_pos = self.game.camera.screen_to_world((map_mouse_x, map_mouse_y))
         cell = self.game.grid_manager.get_cell_at_world_position(world_pos[0], world_pos[1])
-        
+
         if cell:
             logger.info(f"Clicked on grid cell: {cell}")
+
+            # Effacer la dernière cellule surlignée
             if self.last_cell:
-                # clear la derniere case
                 self.grid_manager.reset_cell(self.last_cell[0], self.last_cell[1])
 
+            # Surligner la nouvelle cellule
             self.game.grid_manager.set_cell_color(cell[0], cell[1], (225, 225, 80), 150)
-
-            print(f"Data of clicked cell: ")
-            for keys, values in self.game.data_handler.get_cell_data(cell).items():
-                print(f"    | {keys}: {values}")
-
             self.last_cell = (cell[0], cell[1])
+
+            # ===== NOUVEAU : Récupérer et afficher les données du chunk =====
+            chunk_data = self.game.data_handler.get_chunk_data(cell[0], cell[1])
+            if chunk_data:
+                logger.info(f"Chunk data: {chunk_data}")
+                self.game.ui.update_chunk_info(chunk_data)
+            else:
+                logger.warning(f"No chunk data found for cell {cell}")
+                self.game.ui.update_chunk_info(None)
+            # =================================================================
     
     def _update_ui_buttons(self, mouse_pos, mouse_pressed):
         """Met à jour les boutons de l'interface"""
