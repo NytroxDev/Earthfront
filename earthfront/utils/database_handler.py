@@ -8,10 +8,10 @@ logger = Logger()
 
 class DatabaseHandler:
     def __init__(self, game, db_name="data/chunk_base.db"):
-        self.game    = game
+        self.game = game
         self.db_name = db_name
-        self.conn    = sqlite3.connect(self.db_name)
-        self.cur     = self.conn.cursor()
+        self.conn = sqlite3.connect(self.db_name)
+        self.cur = self.conn.cursor()
         self._create_table()
 
     def _create_table(self):
@@ -60,7 +60,7 @@ class DatabaseHandler:
                       chunk_data.copper, chunk_data.coal, chunk_data.water, chunk_data.wood))
                 chunk_count += 1
 
-                if chunk_count % 20 == 0:  # commit toutes les 20 insertions (plus rapide)
+                if chunk_count % 50 == 0:  # commit toutes les 50 insertions (plus rapide)
                     conn.commit()
 
                 if on_progress is not None:
