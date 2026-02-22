@@ -57,7 +57,7 @@ class Renderer:
                 self.last_camera_pos == camera_pos and
                 self.current_cache_zoom == self.game.camera.zoom and
                 self.game.map_surface is not None and
-                not self.game.grid_manager.visible)
+                not self.game.grid_manager_game.visible)
     
     def _quick_render(self):
         """Rendu rapide sans recalculer la carte"""
@@ -87,8 +87,8 @@ class Renderer:
             self._render_low_zoom()
         
         # Dessiner la grille de ressources si activée
-        if self.game.grid_manager.visible:
-            self.game.grid_manager.draw(self.game.map_surface, self.game.camera)
+        if self.game.grid_manager_game.visible:
+            self.game.grid_manager_game.draw(self.game.map_surface, self.game.camera)
         
         # Blitter la surface de la carte sur l'écran
         self.game.screen.blit(self.game.map_surface, (self.game.PANEL_WIDTH, 0))
