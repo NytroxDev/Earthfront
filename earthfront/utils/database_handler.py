@@ -60,7 +60,7 @@ class DatabaseHandler:
                       chunk_data.copper, chunk_data.coal, chunk_data.water, chunk_data.wood))
                 chunk_count += 1
 
-                if chunk_count % 50 == 0:  # commit toutes les 50 insertions (plus rapide)
+                if chunk_count % 100 == 0:  # commit toutes les 50 insertions (plus rapide)
                     conn.commit()
 
                 if on_progress is not None:
